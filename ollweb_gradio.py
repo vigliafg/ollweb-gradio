@@ -59,6 +59,20 @@ def get_available_models(host_url):
         print(f"Error listing models: {e}")
         return []
 
+
+def extract_text_from_content(content):
+    """
+    Extracts text from Gradio's multimodal content format.
+    Handles:
+    - Simple string
+    - List of dicts (Gradio 5.x/6.x multimodal)
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return " ".join([item["text"] for item in content if isinstance(item, dict) and item.get("type") == "text"])
+    return str(content)
+
 def search_searxng(query):
     """
     Esegue una ricerca su SearXNG.
@@ -310,12 +324,7 @@ with gr.Blocks(title="Assistente Ollama NG MEM") as demo:
     def bot(history, model, use_web, host):
         # Extract user message content
         raw_content = history[-1]["content"]
-        
-        # Handle Gradio 5.x/6.x multimodal format (list of dicts)
-        if isinstance(raw_content, list):
-            user_message = " ".join([item["text"] for item in raw_content if isinstance(item, dict) and item.get("type") == "text"])
-        else:
-            user_message = str(raw_content)
+        user_message = extract_text_from_content(raw_content)
         
         if not model:
             history.append({"role": "assistant", "content": "⚠️ Seleziona un modello per continuare."})
@@ -398,8 +407,17 @@ with gr.Blocks(title="Assistente Ollama NG MEM") as demo:
         # Build messages payload for Ollama
         # history contains [{"role": "user", "content": "..."}] (current message is last)
         # We need to pass everything EXCEPT the last one as history, and the last one (modified) as prompt
+        # CRITICAL: Sanitize ALL history messages to ensure they are strings, not lists, 
+        # otherwise Ollama client (Pydantic) will fail on 2nd turn.
         
-        messages_payload = [msg.copy() for msg in history]
+        messages_payload = []
+        for msg in history:
+             # msg is a dict, we need to copy and clean the content
+             cleaned_msg = msg.copy()
+             cleaned_msg["content"] = extract_text_from_content(msg["content"])
+             messages_payload.append(cleaned_msg)
+
+        # Replace the last message content with our finalized prompt (with context if any)
         messages_payload[-1]["content"] = final_prompt
 
         # Streaming Response
