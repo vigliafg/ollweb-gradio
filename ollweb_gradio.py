@@ -439,6 +439,23 @@ with gr.Blocks(title="Assistente Ollama NG MEM", fill_height=True) as demo:
         # otherwise Ollama client (Pydantic) will fail on 2nd turn.
         
         messages_payload = []
+        # Inject System Prompt with Date
+        try:
+            # Try to set locale to Italian for correct day/month names, fallback to default if fails
+            import locale
+            try:
+                locale.setlocale(locale.LC_TIME, "it_IT.utf8") 
+            except:
+                try:
+                    locale.setlocale(locale.LC_TIME, "it_IT")
+                except:
+                    pass # Keep default
+        except:
+            pass
+
+        today_date = datetime.date.today().strftime("%A %d %B %Y")
+        system_instructions = f"Oggi è {today_date}. Sei un assistente utile e preciso. Rispondi sempre in italiano."
+        messages_payload.append({"role": "system", "content": system_instructions})
         for msg in history:
              # msg is a dict, we need to copy and clean the content
              cleaned_msg = msg.copy()
