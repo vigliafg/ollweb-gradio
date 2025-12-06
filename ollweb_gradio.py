@@ -260,8 +260,34 @@ def update_models(host_url):
         return gr.Dropdown(choices=[], value=None, interactive=True), "🔴 Host non raggiungibile o nessun modello"
     return gr.Dropdown(choices=models, value=models[0] if models else None, interactive=True), "🟢 Host connesso"
 
+# === CUSTOM CSS ===
+CUSTOM_CSS = """
+<style>
+/* Force full height for the chatbot container */
+.gradio-container {
+    height: 100vh !important;
+}
+
+/* 
+   At high zoom levels (mimicking mobile/tablet width), 
+   allow the layout to wrap and scroll normally 
+   instead of forcing fixed positions that might overlap.
+*/
+@media (max-width: 768px) {
+    .gradio-container {
+        height: auto !important;
+        overflow-y: auto !important;
+    }
+    #chatbot {
+        height: 500px !important; /* Fallback height on small screens */
+    }
+}
+</style>
+"""
+
 # === INTERFACE ===
-with gr.Blocks(title="Assistente Ollama NG MEM") as demo:
+with gr.Blocks(title="Assistente Ollama NG MEM", fill_height=True) as demo:
+    gr.HTML(CUSTOM_CSS) # Inject CSS via HTML component
     gr.Markdown("# 🤖 Assistente con Ollama & SearXNG (Gradio)")
     
     with gr.Row():
@@ -291,7 +317,8 @@ with gr.Blocks(title="Assistente Ollama NG MEM") as demo:
 
         with gr.Column(scale=4):
             chatbot = gr.Chatbot(
-                height=600,
+                elem_id="chatbot",
+                scale=1,
                 avatar_images=(None, "🤖") 
             )
             
