@@ -319,7 +319,7 @@ with gr.Blocks(title="Assistente Ollama NG MEM", fill_height=True) as demo:
             chatbot = gr.Chatbot(
                 elem_id="chatbot",
                 scale=1,
-                avatar_images=(None, "🤖") 
+                avatar_images=("user_avatar.png", "bot_avatar.png") 
             )
             
             msg = gr.Textbox(
@@ -380,7 +380,8 @@ with gr.Blocks(title="Assistente Ollama NG MEM", fill_height=True) as demo:
                 search_query = user_message
                 # Simple context extraction
                 if len(history) > 2 and len(user_message.strip()) < 50:
-                    last_user_msg = history[-3]["content"] # -1 is user (curr), -2 is bot, -3 is prev user
+                    # Sanitize previous user message before regex
+                    last_user_msg = extract_text_from_content(history[-3]["content"]) 
                     import re
                     years = re.findall(r'\b(20\d{2})\b', last_user_msg)
                     if years and years[0] not in user_message:
